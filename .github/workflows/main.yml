@@ -34,3 +34,32 @@ jobs:
 
     - name: Print happy message
       run: echo "CI pipline finished successfuly"
+  
+
+jobs:
+  my_cd_part:
+    runs-on: ubuntu-latest
+    needs: [my_ci_part]
+
+    steps:
+
+      - name: Configure aws credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+        aws-region: ${{ env.AWS_REGION_NAME }}
+
+      - name: Create new ElastikBeanstalk application
+        run: |
+          aws elastikbeanstalk create-application-version \
+          --application-name ${{ env.EB_APPLICATION_NAME }} \
+          --source-bundle S3Bucket="${{ env.EB_PACKAGE_S3_BUCKET_NAME }}",S3key="{{ env.DEPLOY_PACKAGE_NAME }}" \
+          --version-label "ver-${{ github.sha }}" \
+          --description "ComminSHA-${{ github.sha }}"
+
+      - name: Deploy new version ElastikBeanstalk application
+        run: aws elastikbeanstalk update-environment --environment-name ${{ env.EB_ENVIRONMENT }} --version-label "ver-${{ github.sha }}"
+
+      - name: Print happy message
+        run: echo "CD pipline finished successfuly"
